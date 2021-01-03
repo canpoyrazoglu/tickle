@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset=utf-8>
+    
+        <title>Bitcoin Price</title>
+        <style>
+            body {
+                margin: 0;
+                background-color: black;
+                display: flex;
+                height: 100vh;
+                cursor: none;
+            }
+
+            h1 {
+                color: #776655;
+                width: 80vw;
+                margin: auto;
+                font-family: 'Noto Sans', 'Noto Sans Kannada', 'Open Sans';
+                text-align: center;
+                filter: blur();
+                font-size: 22vw;
+            }
+
+        </style>
+    </head>
+    <body>
+        <h1></h1>
+        <script type="text/javascript">
+            const priceElem = document.getElementsByTagName('h1')[0];
+            var subscribeMsg = {
+                "event": "bts:subscribe",
+                "data": {
+                    "channel": "live_trades_btcusd"
+                }
+            };
+            var ws;
+            let lastBtcPrice = 0;
+            let displayedBtcPrice = lastBtcPrice;
+            initWebsocket();
+
+            function processTick(data) {
+                lastBtcPrice = Math.floor(data.price);
+                if(!displayedBtcPrice){
+                    displayedBtcPrice = lastBtcPrice;
+                    priceElem.innerHTML = `$${displayedBtcPrice}`;
+                    setInterval(interpolate, 200);
+                }
+                
+            }
+
+            function interpolate(){
+                if(lastBtcPrice != displayedBtcPrice){
+                    if(displayedBtcPrice < lastBtcPrice){
+                        if(lastBtcPrice - displayedBtcPrice > 30){
+                            displayedBtcPrice += 3;
+                        }else if(lastBtcPrice - displayedBtcPrice > 10){
+                            displayedBtcPrice += 2;
+                        }else{
+                            displayedBtcPrice++;
+                        }
+                    }else{
+                        if(lastBtcPrice - displayedBtcPrice < -30){
+                            displayedBtcPrice -= 3;
+                        }else if(lastBtcPrice - displayedBtcPrice < -10){
+                            displayedBtcPrice -= 2;
+                        }else{
+                            displayedBtcPrice--;
+                        }
+                    }
+                    priceElem.innerHTML = `$${displayedBtcPrice}`
+                }
+            }
+
+            function initWebsocket() {
+                ws = new WebSocket("wss://ws.bitstamp.net");
+
+                ws.onopen = function () {
+                    ws.send(JSON.stringify(subscribeMsg));
+                };
+
+                ws.onmessage = function (evt) {
+                    response = JSON.parse(evt.data);
+                    switch (response.event) {
+                        case 'trade': {
+                            processTick(response.data);
+                            break;
+                        }
+                        case 'bts:request_reconnect': {
+                            initWebsocket();
+                            break;
+                        }
+                    }
+
+                };
+                /**
+                * In case of unexpected close event, try to reconnect.
+                */
+                ws.onclose = function () {
+                    console.log('Websocket connection closed');
+                    initWebsocket();
+                };
+            }
+        </script>
+    </body>
+</html>

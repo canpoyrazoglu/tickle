@@ -1,0 +1,1 @@
+Presents realtime Bitcoin / USD price in fullscreen. (data comes from Bitstamp websocket API). It was built for a personal project and I decided to publish it. Code based on Bitstamp's own examples for subscribing over websockets.
